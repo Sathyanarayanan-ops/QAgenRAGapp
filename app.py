@@ -49,6 +49,11 @@ def setup_llm_and_embeddings(model_name):
     )
 
     #embeddings = OllamaEmbeddings(model=model_name, show_progress=True)
+    # hugging face inference embeddings check
+    # problem in prompting , be more specific 
+    # Try mcq format 
+    # Next work on text to sql 
+
     embeddings = HuggingFaceEmbeddings()
     return llm, embeddings
 
@@ -57,9 +62,14 @@ def create_vector_store(docs, embeddings):
 
 def generate_questions(llm, context, num_questions):
     question_gen_template = """
-    Based on the following text, generate exactly {number_questions} diverse and insightful questions, do not generate more or less than specified:
+    Based on the following text from a book, generate exactly {number_questions} diverse and insightful questions. 
+    Focus on the core concepts and main ideas of the book. Ignore any metadata like table of contents, copyright information, publication year, or author details.
+    Ask questions that would help a reader understand the key points and arguments of the book.
+    Text:
     {context}
-    Questions:
+
+    Generate{number_questions} questions:
+
     """
     # messages = [
     #     ("system", "You are a helpful assistant that generates questions based on given context."),
@@ -75,12 +85,12 @@ def generate_questions(llm, context, num_questions):
     question_gen_chain = LLMChain(llm=llm, prompt=question_gen_prompt)
 
     questions = question_gen_chain.run(context=context, number_questions=num_questions).split("\n")
-    questions = [q.strip() for q in questions if q.strip()]  # Remove empty questions
+    questions = [q.strip() for q in questions if q.strip() and q.strip().endswith("?")]  # Remove empty questions
     logging.info(f"Generated {len(questions)} questions")
     return questions
 
 def generate_answers(llm, questions, vectorstore, context):
-    qa_template = """
+    qa_template = """ßß
     Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
     {context}
     Question: {question}
@@ -119,7 +129,7 @@ def generate_answers(llm, questions, vectorstore, context):
         except Exception as e:
             logging.error(f"Error generating answer for question {i}: {e}")
     return qa_pairs
-
+import random 
 def main():
     st.title("QA generator")
     uploaded_file = st.file_uploader("Choose a PDF file",type = "pdf")
@@ -133,10 +143,14 @@ def main():
 
             setup_logging()
             #pdf_path = "/Users/sathya/Desktop/Rag/ECE5554 SU24 Computer Vision Syllabus.pdf"
-            docs = load_and_split_document(pdf_path,100,15)
+            docs = load_and_split_document(pdf_path,1000,200)
             llm, embeddings = setup_llm_and_embeddings("llama3-8b-8192")
             vectorstore = create_vector_store(docs, embeddings)
-            context = "\n".join([doc.page_content for doc in docs[:10]])  # Use first 5 chunks
+
+            sample_size = min(20,len(docs))
+            sampled_docs = random.sample(docs,sample_size)
+            context = "\n".join([doc.page_content for doc in sampled_docs])  # Use first 5 chunks ----> changed to sample up to 20 chunks 
+            
             questions = generate_questions(llm, context, num_questions)
             qa_pairs = generate_answers(llm, questions, vectorstore, context)
 
