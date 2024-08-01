@@ -85,12 +85,12 @@ def generate_questions(llm, context, num_questions):
     question_gen_chain = LLMChain(llm=llm, prompt=question_gen_prompt)
 
     questions = question_gen_chain.run(context=context, number_questions=num_questions).split("\n")
-    questions = [q.strip() for q in questions if q.strip() and q.strip().endswith("?")]  # Remove empty questions
+    questions = [q.strip() for q in questions if q.strip() and q.strip]  # Remove empty questions
     logging.info(f"Generated {len(questions)} questions")
     return questions
 
 def generate_answers(llm, questions, vectorstore, context):
-    qa_template = """ßß
+    qa_template = """
     Use the following pieces of context to answer the question at the end. If you don't know the answer, just say that you don't know, don't try to make up an answer.
     {context}
     Question: {question}
