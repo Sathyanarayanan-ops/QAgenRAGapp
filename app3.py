@@ -11,7 +11,7 @@ from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
-os.environ["GROQ_API_KEY"] = "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"
+os.environ["GROQ_API_KEY"] = ""
 
 def setup_logging():
     logging.basicConfig(level=logging.INFO)
