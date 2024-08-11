@@ -11,7 +11,10 @@ from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_experimental.text_splitter import SemanticChunker
-os.environ["GROQ_API_KEY"] = "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"
+from sentence_transformers import SentenceTransformer
+
+
+os.environ["GROQ_API_KEY"] = "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"
 
 def setup_logging():
     logging.basicConfig(level=logging.INFO)
@@ -40,7 +43,8 @@ def setup_llm_and_embeddings(model_name):
         max_retries=2
     )
     #hugging face inference
-    embeddings = HuggingFaceEmbeddings()
+    # embeddings = HuggingFaceEmbeddings()
+    embeddings = HuggingFaceEmbeddings(model_name='sentence-transformers/all-MiniLM-L6-v2')
     return llm, embeddings
 
 def create_vector_store(docs, embeddings):
@@ -58,7 +62,7 @@ def create_vector_store(docs, embeddings):
 def generate_questions(llm, context, num_questions):
     question_gen_template = """
     You are an expert in generating educational content and question generation. Your task is to create {number_questions} high-quality multiple-choice questions
-    based on the following text
+    based on the following text. Generate exactly {number_questions} questions, no more and no less.
 
     For each question, adhere by the following instructions very carefully and strictly:
     1. **Read the provided text carefully.**
@@ -80,26 +84,36 @@ def generate_questions(llm, context, num_questions):
     Text:
     {context}
 
-
     Generate {number_questions} multiple-choice questions:
     """
     
     question_gen_prompt = PromptTemplate(template=question_gen_template, input_variables=["context", "number_questions"])
     question_gen_chain = LLMChain(llm=llm, prompt=question_gen_prompt)
 
-    # all_questions = []
-    # chunk_size = 10 # generate 10 questions at a time 
+    all_questions = []
+    chunk_size = 10  # Generate 10 questions at a time
+    
+    for i in range(0, num_questions, chunk_size):
+        chunk_num_questions = min(chunk_size, num_questions - i)
+        response = question_gen_chain.run(context=context, number_questions=chunk_num_questions)
+        
+        chunk_questions = [q.strip() for q in response.split("Q:") if q.strip()]
+        
+        for q in chunk_questions:
+            lines = q.split("\n")
+            if len(lines) >= 6 and all(option in q for option in ['A:', 'B:', 'C:', 'D:']) and 'Correct Answer:' in q:
+                all_questions.append(q)
+            else:
+                logging.warning(f"Skipping improperly formatted question: {q}")
+        
+        logging.info(f"Generated {len(all_questions)} valid questions so far")
+        
+        if len(all_questions) >= num_questions:
+            break
 
-    response = question_gen_chain.run(context=context, number_questions=num_questions)
-    print("Raw Response",response)
-    questions = response.split("\n\n")
-    questions = [q.strip() for q in response.split("Q:") if  q.strip()]
-    questions = questions[1:]
-    #questions = [q.strip() for q in questions if q.strip() and q.startswith("Q:")]
-    logging.info(f"Generated {len(questions)} questions")
-    return questions
-
-
+    all_questions = all_questions[:num_questions]  # Ensure we have exactly the requested number of questions
+    logging.info(f"Generated a total of {len(all_questions)} valid questions")
+    return all_questions
 
 def generate_answers(llm, questions, vectorstore, context):
     qa_template = """
@@ -157,11 +171,20 @@ def main():
                 for i, (question, explanation) in enumerate(qa_pairs, 1):
                     st.subheader(f"Question {i}")
                     lines = question.split("\n")
-                    st.write(lines[0])  # Question text
-                    for option in lines[1:5]:
-                        st.write(option)  # Options A, B, C, D
-                    st.write(lines[5]) #if len(lines) > 7 else "Correct Answer: Not specified")  # Correct Answer
-                    st.write("Correct Option:")
+                    # st.write(lines[0])  # Question text
+                    if lines :
+                    # for option in lines[1:5]:
+                        st.write(lines[0])  # Options A, B, C, D
+                    # st.write(lines[5]) #if len(lines) > 7 else "Correct Answer: Not specified")  # Correct Answer
+                        options = [line for line in lines[1:] if line.startswith(('A:', 'B:', 'C:', 'D:'))]
+                        for option in options:
+                            st.write(option)
+                        correct_answer = next((line for line in lines if line.startswith("Correct Answer:")), "Correct Answer: Not specified")
+                        st.write(correct_answer)
+                    else:
+                        st.write("Question format is incorrect")
+
+                    #st.write("Correct Option:")
                     #st.write(explanation)
                     st.write("---")
 
