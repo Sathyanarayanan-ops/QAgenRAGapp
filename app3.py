@@ -10,8 +10,10 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_groq import ChatGroq
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_experimental.text_splitter import SemanticChunker
+
+
 os.environ["GROQ_API_KEY"] = "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"
+
 
 def setup_logging():
     logging.basicConfig(level=logging.INFO)
@@ -171,5 +173,4 @@ def main():
 
 if __name__ == "__main__":
     main()
-
 
