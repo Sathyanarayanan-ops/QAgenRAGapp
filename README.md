@@ -18,7 +18,7 @@ Welcome to the MCQ Generator App! This application generates high-quality multip
 Clone the repository and install dependencies:
 
 ```bash
-git clone https://github.com/yourusername/mcq-generator-app.git
+git clone https://github.com/Sathyanarayanan-ops/QAgenRAGapp.git
 cd mcq-generator-app
 pip install -r requirements.txt
 ```
