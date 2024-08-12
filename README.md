@@ -10,7 +10,7 @@ Welcome to the MCQ Generator App! This application generates high-quality multip
 - **LLM-Powered Question Generation**: Utilizes the `ChatGroq` model to generate well-structured MCQs.
 - **Answer Generation**: Leverages vector stores and embeddings for accurate answer predictions.
 - **Streamlit Interface**: User-friendly UI to upload PDFs, specify question count, and view generated MCQs.
-<img width="1041" alt="Screenshot 2024-08-12 at 10 49 22 AM" src="https://github.com/user-attachments/assets/963854f4-e3fd-4689-8f26-1e67e161a563">
+
 <img width="995" alt="Screenshot 2024-08-12 at 4 11 50 PM" src="https://github.com/user-attachments/assets/9edf88ff-d53d-4aea-876a-29c6fd79f39e">
 
 ## Installation
